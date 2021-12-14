@@ -1,10 +1,12 @@
-
 import 'dart:io';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
+import 'package:flutter_facial_recognition/core/repository/facial_recognition_repository.dart';
 import 'package:flutter_facial_recognition/main.dart';
+import 'package:flutter_facial_recognition/ui/recognized_user.dart';
 
 class SybylFacialRecognition extends StatefulWidget {
   const SybylFacialRecognition({Key? key}) : super(key: key);
@@ -121,9 +123,23 @@ class _SybylFacialRecognitionState extends State<SybylFacialRecognition>
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        title: const Text('Sybyl Facial Recognition'),
+        centerTitle: true,
+        title: const Text('Sybyl Antevorta'),
       ),
-      body: Column(
+      body: _isLoading ?  Padding(
+        padding: const EdgeInsets.symmetric(horizontal:18.0),
+        child: Center(
+          child: Column(
+            mainAxisAlignment:MainAxisAlignment.center,
+            
+            children: const [
+              Text('Checking ...'),
+              SizedBox(height:20),
+              CircularProgressIndicator()
+            ],
+          ),
+        ),
+      ):Column(
         children: <Widget>[
           Expanded(
             child: Container(
@@ -146,7 +162,6 @@ class _SybylFacialRecognitionState extends State<SybylFacialRecognition>
             ),
           ),
           _captureControlRowWidget(),
-          _modeControlRowWidget(),
           Padding(
             padding: const EdgeInsets.all(5.0),
             child: Row(
@@ -213,266 +228,27 @@ class _SybylFacialRecognitionState extends State<SybylFacialRecognition>
 
   /// Display the thumbnail of the captured image or video.
   Widget _thumbnailWidget() {
-
     return Expanded(
       child: Align(
         alignment: Alignment.centerRight,
         child: Row(
           mainAxisSize: MainAxisSize.min,
-          children: <Widget>[imageFile == null
+          children: <Widget>[
+            imageFile == null
                 ? Container()
                 : SizedBox(
                     child:
-                            // The captured image on the web contains a network-accessible URL
-                            // pointing to a location within the browser. It may be displayed
-                            // either with Image.network or Image.memory after loading the image
-                            // bytes to memory.
-                            kIsWeb
-                                ? Image.network(imageFile!.path)
-                                : Image.file(File(imageFile!.path)),
-                       
+                        // The captured image on the web contains a network-accessible URL
+                        // pointing to a location within the browser. It may be displayed
+                        // either with Image.network or Image.memory after loading the image
+                        // bytes to memory.
+                        kIsWeb
+                            ? Image.network(imageFile!.path)
+                            : Image.file(File(imageFile!.path)),
                     width: 64.0,
                     height: 64.0,
                   ),
           ],
-        ),
-      ),
-    );
-  }
-
-  /// Display a bar with buttons to change the flash and exposure modes
-  Widget _modeControlRowWidget() {
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          mainAxisSize: MainAxisSize.max,
-          children: <Widget>[
-            IconButton(
-              icon: Icon(Icons.flash_on),
-              color: Colors.blue,
-              onPressed: controller != null ? onFlashModeButtonPressed : null,
-            ),
-            // The exposure and focus mode are currently not supported on the web.
-            ...(!kIsWeb
-                ? [
-                    IconButton(
-                      icon: Icon(Icons.exposure),
-                      color: Colors.blue,
-                      onPressed: controller != null
-                          ? onExposureModeButtonPressed
-                          : null,
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.filter_center_focus),
-                      color: Colors.blue,
-                      onPressed:
-                          controller != null ? onFocusModeButtonPressed : null,
-                    )
-                  ]
-                : []),
-         
-            IconButton(
-              icon: Icon(controller?.value.isCaptureOrientationLocked ?? false
-                  ? Icons.screen_lock_rotation
-                  : Icons.screen_rotation),
-              color: Colors.blue,
-              onPressed: controller != null
-                  ? onCaptureOrientationLockButtonPressed
-                  : null,
-            ),
-          ],
-        ),
-        _flashModeControlRowWidget(),
-        _exposureModeControlRowWidget(),
-        _focusModeControlRowWidget(),
-      ],
-    );
-  }
-
-  Widget _flashModeControlRowWidget() {
-    return SizeTransition(
-      sizeFactor: _flashModeControlRowAnimation,
-      child: ClipRect(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          mainAxisSize: MainAxisSize.max,
-          children: [
-            IconButton(
-              icon: Icon(Icons.flash_off),
-              color: controller?.value.flashMode == FlashMode.off
-                  ? Colors.orange
-                  : Colors.blue,
-              onPressed: controller != null
-                  ? () => onSetFlashModeButtonPressed(FlashMode.off)
-                  : null,
-            ),
-            IconButton(
-              icon: Icon(Icons.flash_auto),
-              color: controller?.value.flashMode == FlashMode.auto
-                  ? Colors.orange
-                  : Colors.blue,
-              onPressed: controller != null
-                  ? () => onSetFlashModeButtonPressed(FlashMode.auto)
-                  : null,
-            ),
-            IconButton(
-              icon: const Icon(Icons.flash_on),
-              color: controller?.value.flashMode == FlashMode.always
-                  ? Colors.orange
-                  : Colors.blue,
-              onPressed: controller != null
-                  ? () => onSetFlashModeButtonPressed(FlashMode.always)
-                  : null,
-            ),
-            IconButton(
-              icon: const Icon(Icons.highlight),
-              color: controller?.value.flashMode == FlashMode.torch
-                  ? Colors.orange
-                  : Colors.blue,
-              onPressed: controller != null
-                  ? () => onSetFlashModeButtonPressed(FlashMode.torch)
-                  : null,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _exposureModeControlRowWidget() {
-    final ButtonStyle styleAuto = TextButton.styleFrom(
-      primary: controller?.value.exposureMode == ExposureMode.auto
-          ? Colors.orange
-          : Colors.blue,
-    );
-    final ButtonStyle styleLocked = TextButton.styleFrom(
-      primary: controller?.value.exposureMode == ExposureMode.locked
-          ? Colors.orange
-          : Colors.blue,
-    );
-
-    return SizeTransition(
-      sizeFactor: _exposureModeControlRowAnimation,
-      child: ClipRect(
-        child: Container(
-          color: Colors.grey.shade50,
-          child: Column(
-            children: [
-              const Center(
-                child: Text("Exposure Mode"),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                mainAxisSize: MainAxisSize.max,
-                children: [
-                  TextButton(
-                    child: const Text('AUTO'),
-                    style: styleAuto,
-                    onPressed: controller != null
-                        ? () =>
-                            onSetExposureModeButtonPressed(ExposureMode.auto)
-                        : null,
-                    onLongPress: () {
-                      if (controller != null) {
-                        controller!.setExposurePoint(null);
-                        showInSnackBar('Resetting exposure point');
-                      }
-                    },
-                  ),
-                  TextButton(
-                    child: const Text('LOCKED'),
-                    style: styleLocked,
-                    onPressed: controller != null
-                        ? () =>
-                            onSetExposureModeButtonPressed(ExposureMode.locked)
-                        : null,
-                  ),
-                  TextButton(
-                    child: const Text('RESET OFFSET'),
-                    style: styleLocked,
-                    onPressed: controller != null
-                        ? () => controller!.setExposureOffset(0.0)
-                        : null,
-                  ),
-                ],
-              ),
-              const Center(
-                child: Text("Exposure Offset"),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                mainAxisSize: MainAxisSize.max,
-                children: [
-                  Text(_minAvailableExposureOffset.toString()),
-                  Slider(
-                    value: _currentExposureOffset,
-                    min: _minAvailableExposureOffset,
-                    max: _maxAvailableExposureOffset,
-                    label: _currentExposureOffset.toString(),
-                    onChanged: _minAvailableExposureOffset ==
-                            _maxAvailableExposureOffset
-                        ? null
-                        : setExposureOffset,
-                  ),
-                  Text(_maxAvailableExposureOffset.toString()),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _focusModeControlRowWidget() {
-    final ButtonStyle styleAuto = TextButton.styleFrom(
-      primary: controller?.value.focusMode == FocusMode.auto
-          ? Colors.orange
-          : Colors.blue,
-    );
-    final ButtonStyle styleLocked = TextButton.styleFrom(
-      primary: controller?.value.focusMode == FocusMode.locked
-          ? Colors.orange
-          : Colors.blue,
-    );
-
-    return SizeTransition(
-      sizeFactor: _focusModeControlRowAnimation,
-      child: ClipRect(
-        child: Container(
-          color: Colors.grey.shade50,
-          child: Column(
-            children: [
-              Center(
-                child: Text("Focus Mode"),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                mainAxisSize: MainAxisSize.max,
-                children: [
-                  TextButton(
-                    child: Text('AUTO'),
-                    style: styleAuto,
-                    onPressed: controller != null
-                        ? () => onSetFocusModeButtonPressed(FocusMode.auto)
-                        : null,
-                    onLongPress: () {
-                      if (controller != null) controller!.setFocusPoint(null);
-                      showInSnackBar('Resetting focus point');
-                    },
-                  ),
-                  TextButton(
-                    child: Text('LOCKED'),
-                    style: styleLocked,
-                    onPressed: controller != null
-                        ? () => onSetFocusModeButtonPressed(FocusMode.locked)
-                        : null,
-                  ),
-                ],
-              ),
-            ],
-          ),
         ),
       ),
     );
@@ -495,10 +271,6 @@ class _SybylFacialRecognitionState extends State<SybylFacialRecognition>
               ? onTakePictureButtonPressed
               : null,
         ),
-        
-       
-       
-        
       ],
     );
   }
@@ -620,9 +392,43 @@ class _SybylFacialRecognitionState extends State<SybylFacialRecognition>
         setState(() {
           imageFile = file;
         });
-        if (file != null) showInSnackBar('Picture saved to ${file.path}');
+        postImage();
+        // if (file != null) showInSnackBar('Picture saved to ${file.path}');
       }
     });
+  }
+
+  bool _isLoading = false;
+  postImage() async {
+    try {
+      setState(() {
+        _isLoading = true;
+      });
+      int userID = 0;
+      // EasyLoading.addStatusCallback((status) async {
+      //   debugPrint('EasyLoading Status $status');
+
+      userID = await FacialRecognitionRepository.postImage(imageFile!);
+
+      // });
+
+      // EasyLoading.showSuccess('User ID $userID');
+      if(mounted)
+{
+    setState(() {
+        _isLoading = false;
+      });
+}
+      Navigator.push(context,
+          MaterialPageRoute(builder: (_) => RecognizedUser(userID: userID)));
+      // EasyLoading.showSuccess('Use in initState');
+
+    } catch (e) {
+      EasyLoading.showError(e.toString());
+        setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   void onFlashModeButtonPressed() {
@@ -707,8 +513,6 @@ class _SybylFacialRecognitionState extends State<SybylFacialRecognition>
     });
   }
 
-  
-
   Future<void> onPausePreviewButtonPressed() async {
     final CameraController? cameraController = controller;
 
@@ -725,10 +529,6 @@ class _SybylFacialRecognitionState extends State<SybylFacialRecognition>
 
     if (mounted) setState(() {});
   }
-
-
-
-
 
   Future<void> startVideoRecording() async {
     final CameraController? cameraController = controller;
@@ -765,8 +565,6 @@ class _SybylFacialRecognitionState extends State<SybylFacialRecognition>
       return null;
     }
   }
-
-
 
   Future<void> setFlashMode(FlashMode mode) async {
     if (controller == null) {
@@ -823,8 +621,6 @@ class _SybylFacialRecognitionState extends State<SybylFacialRecognition>
     }
   }
 
-  
-
   Future<XFile?> takePicture() async {
     final CameraController? cameraController = controller;
     if (cameraController == null || !cameraController.value.isInitialized) {
@@ -851,8 +647,6 @@ class _SybylFacialRecognitionState extends State<SybylFacialRecognition>
     showInSnackBar('Error: ${e.code}\n${e.description}');
   }
 }
-
-
 
 // This allows a value of type T or T? to be treated as a value of type T?.
 ///

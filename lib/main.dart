@@ -1,12 +1,10 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:camera/camera.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_facial_recognition/ui/camera_app.dart';
-import 'package:flutter_facial_recognition/ui/landing_screen.dart';
-
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 List<CameraDescription> cameras = [];
 
 Future<void> main() async {
@@ -17,7 +15,7 @@ Future<void> main() async {
   } on CameraException catch (e) {
     logError(e.code, e.description);
   }
-  runApp(CameraApp());
+  runApp(const CameraApp());
 }
 
 class CameraApp extends StatelessWidget {
@@ -25,8 +23,14 @@ class CameraApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: SybylFacialRecognitionLandingScreeen(),
+    return  MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primaryColor: Colors.red,
+      ),
+      
+      home: const SybylFacialRecognition(),
+      builder: EasyLoading.init(),
     );
   }
 }
